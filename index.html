@@ -4,14 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#f8fafc">
+    
+    <!-- PWA / Mobil Uygulama Ayarları -->
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes"> <!-- Android için ek -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Gönül Aynası">
     <meta name="description" content="Esmaü'l Hüsna ve Maneviyat Hazinesi">
 
-    <!-- UYGULAMA İKONU (Base64) -->
-    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="> 
-    <!-- Not: Gerçek ikon için yukarıdaki placeholder yerine önceki SVG data-uri kullanılabilir, ancak "No SVG" kuralı gereği body içinde svg kullanmayacağız. -->
+    <!-- UYGULAMA İKONU (Zümrüt Yeşili Hilal) -->
+    <!-- Bu ikon, beğendiğin CSS logosunun aynısıdır: Zümrüt zemin üzerine Amber Hilal -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23064e3b'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23fbbf24'/%3E%3Ccircle cx='62' cy='38' r='36' fill='%23064e3b'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23064e3b'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23fbbf24'/%3E%3Ccircle cx='62' cy='38' r='36' fill='%23064e3b'/%3E%3C/svg%3E">
+
+    <!-- MANIFEST (Android'de "Uygulama" gibi davranması için Kimlik Kartı) -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Gönül Aynası","short_name":"GönülAynası","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#f8fafc","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2750%27 fill=%27%23064e3b%27/%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2740%27 fill=%27%23fbbf24%27/%3E%3Ccircle cx=%2762%27 cy=%2738%27 r=%2736%27 fill=%27%23064e3b%27/%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"},{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2750%27 fill=%27%23064e3b%27/%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2740%27 fill=%27%23fbbf24%27/%3E%3Ccircle cx=%2762%27 cy=%2738%27 r=%2736%27 fill=%27%23064e3b%27/%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
 
     <title>Gönül Aynası | İnteraktif Mecmua</title>
 
@@ -101,7 +108,8 @@
     <!-- ÜST BAR (Header) -->
     <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 p-4 sticky top-0 z-20 shadow-sm">
         <div class="max-w-2xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
+            <!-- Tıklayınca Pano'ya (Anasayfa) Dönme Özelliği Eklendi -->
+            <div class="flex items-center gap-3 cursor-pointer select-none active:opacity-70 transition-opacity" onclick="navTo('dashboard')" title="Panoya Dön">
                 <!-- CSS ile Hilal Logosu -->
                 <div class="w-8 h-8 rounded-full border-2 border-amber-500 relative flex items-center justify-center bg-emerald-900 overflow-hidden shadow-md">
                     <div class="absolute w-6 h-6 bg-emerald-900 rounded-full -top-1 -right-1 z-10"></div>
