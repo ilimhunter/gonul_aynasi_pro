@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#f8fafc">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Gönül Aynası">
+    <meta name="description" content="Esmaü'l Hüsna ve Maneviyat Hazinesi">
+
+    <!-- UYGULAMA İKONU (Base64) -->
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="> 
+    <!-- Not: Gerçek ikon için yukarıdaki placeholder yerine önceki SVG data-uri kullanılabilir, ancak "No SVG" kuralı gereği body içinde svg kullanmayacağız. -->
+
+    <title>Gönül Aynası | İnteraktif Mecmua</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Temel Ayarlar --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate-50 */
+            overscroll-behavior-y: none; /* Pull-to-refresh engelleme */
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .font-arabic { font-family: 'Amiri', serif; line-height: 1.5; }
+        .font-title { font-family: 'Cinzel', serif; }
+
+        /* --- Kart Animasyonları --- */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        .card-flip-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .flipped { transform: rotateY(180deg); }
+
+        /* --- Chart Container --- */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            height: 250px;
+            max-height: 300px;
+        }
+
+        /* --- Custom Scrollbar --- */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+
+        /* --- Altın Efektli Metin --- */
+        .text-gold {
+            color: #b45309;
+            background: linear-gradient(to right, #b45309, #d97706, #b45309);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* --- Mobile Navigation Active State --- */
+        .nav-item.active {
+            color: #059669; /* Emerald-600 */
+            font-weight: 600;
+        }
+        .nav-item.active::after {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 4px;
+            background: #059669;
+            border-radius: 50%;
+            margin: 2px auto 0;
+        }
+        
+        /* --- Dekoratif Desen --- */
+        .bg-pattern {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-pattern text-slate-800">
+
+    <!-- ÜST BAR (Header) -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 p-4 sticky top-0 z-20 shadow-sm">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <!-- CSS ile Hilal Logosu -->
+                <div class="w-8 h-8 rounded-full border-2 border-amber-500 relative flex items-center justify-center bg-emerald-900 overflow-hidden shadow-md">
+                    <div class="absolute w-6 h-6 bg-emerald-900 rounded-full -top-1 -right-1 z-10"></div>
+                    <div class="w-full h-full bg-amber-400 rounded-full"></div>
+                </div>
+                <div>
+                    <h1 class="font-title text-xl font-bold text-slate-800 tracking-wide">Gönül Aynası</h1>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Dijital Mecmua</p>
+                </div>
+            </div>
+            <button id="theme-toggle" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-amber-500 transition-colors">
+                <span class="text-xl">☀</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ANA İÇERİK ALANI (SPA Container) -->
+    <main id="app-container" class="flex-1 relative overflow-hidden w-full max-w-2xl mx-auto">
+        
+        <!-- SAYFA 1: DASHBOARD (Pano) -->
+        <section id="view-dashboard" class="absolute inset-0 p-4 overflow-y-auto custom-scroll transition-opacity duration-300">
+            <div class="space-y-6 pb-20">
+                <!-- Hoşgeldin Kartı -->
+                <div class="bg-emerald-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 text-9xl opacity-10 font-arabic">۞</div>
+                    <h2 class="text-2xl font-title mb-1">Hoş Geldiniz</h2>
+                    <p class="text-emerald-100 text-sm mb-4 opacity-90">Gönül aynanızı parlatacak manalar sizi bekliyor.</p>
+                    <button onclick="navTo('explore')" class="bg-amber-500 text-emerald-950 px-4 py-2 rounded-lg text-sm font-bold shadow-md active:scale-95 transition-transform">
+                        Tefekküre Başla
+                    </button>
+                </div>
+
+                <!-- İstatistikler -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
+                        <span class="text-3xl font-bold text-emerald-600" id="stat-total-view">0</span>
+                        <span class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Toplam Okuma</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
+                        <span class="text-3xl font-bold text-rose-500" id="stat-favorites">0</span>
+                        <span class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Gönle Düşen</span>
+                    </div>
+                </div>
+
+                <!-- Grafik Alanı -->
+                <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                        <span class="text-amber-500">◈</span> Zikir Dağılımı
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="zikirChart"></canvas>
+                    </div>
+                    <p class="text-xs text-slate-400 text-center mt-2 italic">Kategorilere göre okuma oranlarınız</p>
+                </div>
+
+                <!-- Günün Sözü (Rastgele) -->
+                <div class="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold text-indigo-400 uppercase">Tevafuk</span>
+                        <span class="text-indigo-300 text-xl">❝</span>
+                    </div>
+                    <p id="daily-quote" class="text-indigo-900 font-medium italic text-lg text-center leading-relaxed">
+                        "Yaratılanı hoş gör, Yaratan'dan ötürü."
+                    </p>
+                    <p id="daily-source" class="text-right text-xs text-indigo-500 mt-3 font-bold">- Yunus Emre</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SAYFA 2: EXPLORE (Tefekkür / Kartlar) -->
+        <section id="view-explore" class="absolute inset-0 p-4 flex flex-col opacity-0 pointer-events-none transition-opacity duration-300">
+            <!-- Kategori Filtreleri -->
+            <div class="flex gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar" id="explore-tabs">
+                <button onclick="filterContent('all')" class="explore-tab active px-4 py-1.5 rounded-full bg-slate-200 text-slate-600 text-xs font-bold whitespace-nowrap transition-colors">Hepsi</button>
+                <button onclick="filterContent('esma')" class="explore-tab px-4 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-bold whitespace-nowrap transition-colors">Esma</button>
+                <button onclick="filterContent('ayet')" class="explore-tab px-4 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-bold whitespace-nowrap transition-colors">Ayet</button>
+                <button onclick="filterContent('hadis')" class="explore-tab px-4 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-bold whitespace-nowrap transition-colors">Hadis</button>
+            </div>
+
+            <!-- Kart Alanı -->
+            <div class="flex-1 flex items-center justify-center relative perspective-1000">
+                <div id="flashcard" class="w-full h-[60vh] max-h-[500px] relative transform-style-3d cursor-pointer group" onclick="app.flipCard()">
+                    
+                    <!-- Ön Yüz -->
+                    <div class="absolute inset-0 w-full h-full bg-white rounded-2xl shadow-xl border-4 border-slate-50 backface-hidden flex flex-col items-center justify-center p-6 text-center select-none">
+                        <div class="absolute top-4 right-4">
+                            <button id="btn-fav-card" onclick="app.toggleFavorite(event)" class="text-3xl text-slate-200 transition-colors active:scale-90">♥</button>
+                        </div>
+                        <span id="card-cat-badge" class="absolute top-4 left-4 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">ESMA</span>
+                        
+                        <div class="flex-1 flex flex-col justify-center w-full">
+                            <h2 id="card-main" class="font-arabic text-5xl md:text-6xl text-slate-800 mb-6 drop-shadow-sm leading-relaxed">اَللّٰهْ</h2>
+                            <div class="w-16 h-1 bg-amber-400 mx-auto rounded-full mb-6 opacity-50"></div>
+                            <p id="card-sub" class="font-title text-2xl font-bold text-slate-600 tracking-widest uppercase">ALLAH</p>
+                        </div>
+                        
+                        <p class="text-xs text-slate-400 italic mt-auto">Manası için dokununuz ↻</p>
+                    </div>
+
+                    <!-- Arka Yüz -->
+                    <div class="absolute inset-0 w-full h-full bg-slate-800 rounded-2xl shadow-xl backface-hidden rotate-y-180 flex flex-col items-center justify-center p-8 text-center border-4 border-amber-500/30">
+                        <h3 id="card-title-back" class="font-title text-xl text-amber-400 mb-4 border-b border-white/10 pb-2 w-full">Allah</h3>
+                        <p id="card-desc" class="text-slate-200 text-lg leading-relaxed font-medium overflow-y-auto max-h-[60%] custom-scroll">
+                            Varlığı zorunlu olan ve bütün övgülere layık bulunan zâtın husûsî ve en kapsamlı ism-i şerifi.
+                        </p>
+                        <div class="mt-auto pt-4 text-emerald-400 text-2xl">❧</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kontroller -->
+            <div class="flex justify-between items-center mt-6 px-8">
+                <button onclick="app.prevCard()" class="w-12 h-12 rounded-full bg-white border border-slate-200 text-slate-400 shadow-sm flex items-center justify-center text-xl hover:bg-slate-50 active:bg-slate-100 active:scale-95 transition-all">❮</button>
+                <button onclick="app.randomCard()" class="bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg active:scale-95 flex items-center gap-2">
+                    <span class="text-lg">⚄</span> Rast Gelsin
+                </button>
+                <button onclick="app.nextCard()" class="w-12 h-12 rounded-full bg-white border border-slate-200 text-slate-400 shadow-sm flex items-center justify-center text-xl hover:bg-slate-50 active:bg-slate-100 active:scale-95 transition-all">❯</button>
+            </div>
+        </section>
+
+        <!-- SAYFA 3: LIST (Fihrist) -->
+        <section id="view-list" class="absolute inset-0 p-4 bg-white overflow-hidden flex flex-col opacity-0 pointer-events-none transition-opacity duration-300">
+            <div class="mb-4 relative">
+                <input type="text" id="search-input" placeholder="Ara..." class="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 px-4 pl-10 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
+                <span class="absolute left-3 top-3 text-slate-400">🔍</span>
+            </div>
+            
+            <div id="list-container" class="flex-1 overflow-y-auto custom-scroll space-y-2 pb-20">
+                <!-- Liste elemanları JS ile buraya gelecek -->
+            </div>
+        </section>
+
+        <!-- SAYFA 4: FAVORITES (Gönül Heybesi) -->
+        <section id="view-favorites" class="absolute inset-0 p-4 opacity-0 pointer-events-none transition-opacity duration-300 overflow-y-auto custom-scroll">
+            <h2 class="font-title text-xl text-center text-rose-700 mb-6 flex items-center justify-center gap-2">
+                <span>♥</span> Gönlüme Düşenler
+            </h2>
+            <div id="favorites-container" class="space-y-3 pb-20">
+                <!-- Favoriler JS ile dolacak -->
+                <div class="text-center text-slate-400 mt-10 p-8 border-2 border-dashed border-slate-200 rounded-xl">
+                    <div class="text-4xl mb-2 grayscale opacity-50">❦</div>
+                    <p>Henüz gönül heybeniz boş azizim.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ALT NAVİGASYON (Bottom Bar) -->
+    <nav class="bg-white border-t border-slate-200 pb-safe pt-2 px-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-30">
+        <div class="flex justify-between items-end max-w-md mx-auto">
+            <button onclick="navTo('dashboard')" class="nav-item active flex flex-col items-center p-2 text-slate-400 transition-colors">
+                <span class="text-xl mb-1">☖</span>
+                <span class="text-[10px] font-medium">Pano</span>
+            </button>
+            <button onclick="navTo('explore')" class="nav-item flex flex-col items-center p-2 text-slate-400 transition-colors">
+                <span class="text-xl mb-1">❖</span>
+                <span class="text-[10px] font-medium">Tefekkür</span>
+            </button>
+            <button onclick="navTo('list')" class="nav-item flex flex-col items-center p-2 text-slate-400 transition-colors">
+                <span class="text-xl mb-1">☰</span>
+                <span class="text-[10px] font-medium">Fihrist</span>
+            </button>
+            <button onclick="navTo('favorites')" class="nav-item flex flex-col items-center p-2 text-slate-400 transition-colors">
+                <span class="text-xl mb-1">♥</span>
+                <span class="text-[10px] font-medium">Heybe</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- DATA & LOGIC -->
+    <script>
+        /* --- VERİ SETİ (GÜLDESTE) --- */
+        const sourceData = [
+            // Esmaü'l Hüsna (Örnekler)
+            { id: 'esma_1', cat: 'esma', main: 'اَللّٰهْ', sub: 'ALLAH', desc: 'Varlığı zorunlu olan ve bütün övgülere layık bulunan zâtın husûsî ismi.', title: 'Allah' },
+            { id: 'esma_2', cat: 'esma', main: 'اَلرَّحْمٰنُ', sub: 'ER-RAHMÂN', desc: 'Bütün mahlûkâta merhamet eden, hepsine de nîmetler veren.', title: 'er-Rahmân' },
+            { id: 'esma_3', cat: 'esma', main: 'اَلرَّح۪يمُ', sub: 'ER-RAHÎM', desc: 'Pek ziyâde merhamet edici, bilhassa mü’minlere rahmet eden.', title: 'er-Rahîm' },
+            { id: 'esma_4', cat: 'esma', main: 'اَلْمَلِكُ', sub: 'EL-MELİK', desc: 'Görünen ve görünmeyen alemlerin yegane sahibi.', title: 'el-Melik' },
+            { id: 'esma_5', cat: 'esma', main: 'اَلْقُدُّوسُ', sub: 'EL-KUDDÛS', desc: 'Hatâdan, gafletten ve her türlü eksiklikten münezzeh.', title: 'el-Kuddûs' },
+            { id: 'esma_6', cat: 'esma', main: 'اَلسَّلَامُ', sub: 'ES-SELÂM', desc: 'Her türlü tehlikelerden kullarını selâmete çıkaran.', title: 'es-Selâm' },
+            { id: 'esma_99', cat: 'esma', main: 'اَلصَّبُورُ', sub: 'ES-SABÛR', desc: 'Çok sabırlı, cezalandırmada acele etmeyen.', title: 'es-Sabûr' },
+
+            // Ayetler
+            { id: 'ayet_1', cat: 'ayet', main: 'وَاِذَا سَاَلَكَ عِبَاد۪ي عَنّ۪ي...', sub: 'BAKARA, 186', desc: 'Kullarım sana beni sorduklarında bilsinler ki şüphesiz ben yakınımdır.', title: 'Yakınlık' },
+            { id: 'ayet_2', cat: 'ayet', main: 'اَلَٓا بِذِكْرِ اللّٰهِ تَطْمَئِنُّ...', sub: 'RA\'D, 28', desc: 'Bilesiniz ki, kalpler ancak Allah\'ı anmakla huzur bulur.', title: 'Huzur' },
+            { id: 'ayet_3', cat: 'ayet', main: 'فَاِنَّ مَعَ الْعُسْرِ يُسْرًاۙ', sub: 'İNŞİRAH, 5', desc: 'Şüphesiz güçlükle beraber bir kolaylık vardır.', title: 'Ümit' },
+
+            // Hadisler
+            { id: 'hadis_1', cat: 'hadis', main: 'إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ', sub: 'BUHÂRÎ', desc: 'Ameller ancak niyetlere göredir.', title: 'Niyet' },
+            { id: 'hadis_2', cat: 'hadis', main: 'الـدِّينُ النَّصِيحَةُ', sub: 'MÜSLİM', desc: 'Din samimiyettir.', title: 'Samimiyet' },
+
+            // Şiirler (Yunus Emre)
+            { id: 'siir_1', cat: 'siir', main: 'İlim ilim bilmektir', sub: 'YUNUS EMRE', desc: 'İlim kendin bilmektir. Sen kendini bilmezsin, ya nice okumaktır?', title: 'Marifet' },
+            { id: 'siir_2', cat: 'siir', main: 'Yaratılanı hoş gör', sub: 'YUNUS EMRE', desc: 'Yaratılanı hoş gör, Yaratan\'dan ötürü.', title: 'Hoşgörü' }
+        ];
+
+        /* --- UYGULAMA MANTIĞI (Logic) --- */
+        const app = {
+            state: {
+                view: 'dashboard',
+                currentIndex: 0,
+                isFlipped: false,
+                filter: 'all',
+                favorites: JSON.parse(localStorage.getItem('gonulFavorites')) || [],
+                historyCount: parseInt(localStorage.getItem('gonulHistory')) || 0
+            },
+
+            // Başlatma
+            init() {
+                this.renderChart();
+                this.updateUI();
+                this.setupSwipe();
+                this.renderList();
+                this.renderFavorites();
+                
+                // İlk Rastgele Söz
+                const daily = sourceData[Math.floor(Math.random() * sourceData.length)];
+                document.getElementById('daily-quote').innerText = `"${daily.desc}"`;
+                document.getElementById('daily-source').innerText = `- ${daily.title}`;
+            },
+
+            // Navigasyon
+            navTo(viewName) {
+                // Görünürlük
+                document.querySelectorAll('main > section').forEach(el => {
+                    el.style.opacity = '0';
+                    el.style.pointerEvents = 'none';
+                });
+                const target = document.getElementById(`view-${viewName}`);
+                target.style.opacity = '1';
+                target.style.pointerEvents = 'auto';
+
+                // Tab Bar Güncelleme
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                const navIndex = ['dashboard', 'explore', 'list', 'favorites'].indexOf(viewName);
+                if (navIndex !== -1) {
+                    document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
+                }
+
+                // Özel İşlemler
+                if (viewName === 'explore') this.renderCard();
+                if (viewName === 'favorites') this.renderFavorites();
+                if (viewName === 'dashboard') this.updateStats(); // İstatistikleri güncelle
+            },
+
+            // Kart İşlemleri
+            getFilteredData() {
+                if (this.state.filter === 'all') return sourceData;
+                return sourceData.filter(i => i.cat === this.state.filter);
+            },
+
+            renderCard() {
+                const data = this.getFilteredData();
+                if (data.length === 0) return;
+                
+                const item = data[this.state.currentIndex];
+                const cardInner = document.querySelector('.card-flip-inner');
+                const cardEl = document.getElementById('flashcard').firstElementChild; // .card-flip-inner
+                
+                // Kart dönükse düzelt
+                if (this.state.isFlipped) {
+                    this.flipCard();
+                    setTimeout(() => this.updateCardContent(item), 300);
+                } else {
+                    this.updateCardContent(item);
+                }
+            },
+
+            updateCardContent(item) {
+                // Kategori Rengi ve Etiketi
+                const colors = { esma: 'emerald', ayet: 'sky', hadis: 'rose', siir: 'amber' };
+                const color = colors[item.cat] || 'slate';
+                
+                const badge = document.getElementById('card-cat-badge');
+                badge.className = `absolute top-4 left-4 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider bg-${color}-100 text-${color}-700`;
+                badge.innerText = item.cat;
+
+                document.getElementById('card-main').innerText = item.main;
+                document.getElementById('card-sub').innerText = item.sub;
+                document.getElementById('card-title-back').innerText = item.title;
+                document.getElementById('card-desc').innerText = item.desc;
+
+                // Favori İkonu Durumu
+                const btnFav = document.getElementById('btn-fav-card');
+                const isFav = this.state.favorites.includes(item.id);
+                btnFav.innerText = isFav ? '♥' : '♡';
+                btnFav.className = `text-3xl transition-colors active:scale-90 ${isFav ? 'text-rose-500' : 'text-slate-300'}`;
+            },
+
+            flipCard() {
+                const cardInner = document.getElementById('flashcard').firstElementChild; // Inner div
+                // HTML yapısında card-container -> flashcard -> inner (bizde inner yok, direct children var, yapıyı düzeltelim)
+                // Tailwind yapısında transform'u inner'a uygulayacağız.
+                // Mevcut yapıda "flashcard" div'inin içindeki çocukları döndürmek yerine, flashcard'a class ekleyip çocukları absolute yapmıştık.
+                // CSS class "flipped" inner'a eklenmeli.
+                
+                // Düzeltme: HTML yapısını CSS ile uyumlu hale getirmek için:
+                // #flashcard'a `card-flip-inner` class'ı ekleyelim.
+                const flashcard = document.getElementById('flashcard');
+                
+                // Basit Flip Mantığı: Ön yüzü gizle arka yüzü göster değil, transform ile.
+                // CSS'teki .flipped sınıfını #flashcard'a ekleyip çıkaracağız.
+                // Not: #flashcard'ın içinde absolute 2 div var.
+                // Biz #flashcard'a .card-flip-inner dedik ama JS'de id ile seçiyoruz.
+                
+                // En temiz yöntem: CSS'deki .flipped sınıfını toggle et.
+                // Ancak CSS'de .flipped { transform: rotateY(180deg) } var.
+                // Bu sınıfı #flashcard elementine değil, onun içindeki "dönen" kapsayıcıya vermeliyiz.
+                // Kodda #flashcard direkt container. 
+                // JS Düzeltmesi: #flashcard elementine 'card-flip-inner' class'ı ekleyelim (HTML'de eksikse)
+                // ve toggle edelim.
+                
+                const cardDiv = document.getElementById('flashcard');
+                // classList'e 'card-flip-inner' ekleyelim (CSS transition için)
+                if(!cardDiv.classList.contains('card-flip-inner')) cardDiv.classList.add('card-flip-inner');
+                
+                this.state.isFlipped = !this.state.isFlipped;
+                if(this.state.isFlipped) cardDiv.classList.add('flipped');
+                else cardDiv.classList.remove('flipped');
+
+                // Okuma sayısını artır (Sadece arka yüz açıldığında yani manası okunduğunda)
+                if(this.state.isFlipped) {
+                    this.state.historyCount++;
+                    localStorage.setItem('gonulHistory', this.state.historyCount);
+                    document.getElementById('stat-total-view').innerText = this.state.historyCount;
+                }
+            },
+
+            nextCard() {
+                const data = this.getFilteredData();
+                if (this.state.currentIndex < data.length - 1) this.state.currentIndex++;
+                else this.state.currentIndex = 0;
+                this.renderCard();
+            },
+
+            prevCard() {
+                const data = this.getFilteredData();
+                if (this.state.currentIndex > 0) this.state.currentIndex--;
+                else this.state.currentIndex = data.length - 1;
+                this.renderCard();
+            },
+
+            randomCard() {
+                const data = this.getFilteredData();
+                let newIndex;
+                do {
+                    newIndex = Math.floor(Math.random() * data.length);
+                } while (newIndex === this.state.currentIndex && data.length > 1);
+                this.state.currentIndex = newIndex;
+                this.renderCard();
+            },
+
+            toggleFavorite(e, specificId = null) {
+                if(e) e.stopPropagation();
+                
+                const id = specificId || this.getFilteredData()[this.state.currentIndex].id;
+                const index = this.state.favorites.indexOf(id);
+
+                if (index > -1) this.state.favorites.splice(index, 1);
+                else this.state.favorites.push(id);
+
+                localStorage.setItem('gonulFavorites', JSON.stringify(this.state.favorites));
+                
+                // UI Güncelleme
+                this.updateCardContent(this.getFilteredData()[this.state.currentIndex]);
+                this.updateStats();
+                if(this.state.view === 'favorites') this.renderFavorites();
+            },
+
+            // Liste Görünümü
+            renderList() {
+                const container = document.getElementById('list-container');
+                const search = document.getElementById('search-input').value.toLowerCase();
+                container.innerHTML = '';
+
+                sourceData.forEach(item => {
+                    if (item.title.toLowerCase().includes(search) || item.main.includes(search)) {
+                        const div = document.createElement('div');
+                        div.className = 'p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors flex justify-between items-center group cursor-pointer';
+                        div.onclick = () => {
+                            // Explore moduna geç ve bu kartı aç
+                            this.state.filter = item.cat; // Kategoriyi eşle
+                            // Filtrelenmiş listede indexi bul
+                            const filtered = sourceData.filter(i => i.cat === item.cat);
+                            this.state.currentIndex = filtered.findIndex(i => i.id === item.id);
+                            this.navTo('explore');
+                        };
+                        div.innerHTML = `
+                            <div>
+                                <h4 class="font-bold text-slate-700 text-sm">${item.title} <span class="text-[10px] text-slate-400 font-normal uppercase ml-2 bg-slate-100 px-1 rounded">${item.cat}</span></h4>
+                                <p class="text-xs text-slate-500 truncate w-64">${item.desc}</p>
+                            </div>
+                            <span class="font-arabic text-xl text-emerald-800 opacity-50 group-hover:opacity-100">${item.main}</span>
+                        `;
+                        container.appendChild(div);
+                    }
+                });
+            },
+
+            renderFavorites() {
+                const container = document.getElementById('favorites-container');
+                container.innerHTML = '';
+                
+                if(this.state.favorites.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-slate-400 mt-10 p-8 border-2 border-dashed border-slate-200 rounded-xl">
+                            <div class="text-4xl mb-2 grayscale opacity-50">❦</div>
+                            <p>Henüz gönül heybeniz boş azizim.</p>
+                        </div>`;
+                    return;
+                }
+
+                this.state.favorites.forEach(favId => {
+                    const item = sourceData.find(i => i.id === favId);
+                    if(item) {
+                        const div = document.createElement('div');
+                        div.className = 'bg-white p-4 rounded-xl shadow-sm border-l-4 border-rose-400 relative';
+                        div.innerHTML = `
+                            <button onclick="app.toggleFavorite(event, '${item.id}')" class="absolute top-2 right-2 text-rose-300 hover:text-rose-600 text-lg">✕</button>
+                            <h4 class="font-bold text-slate-800">${item.title}</h4>
+                            <p class="font-arabic text-xl text-right text-slate-600 my-2">${item.main}</p>
+                            <p class="text-sm text-slate-500 italic">"${item.desc}"</p>
+                        `;
+                        container.appendChild(div);
+                    }
+                });
+            },
+
+            // Chart.js
+            renderChart() {
+                const ctx = document.getElementById('zikirChart').getContext('2d');
+                
+                // Veriyi hazırla
+                const counts = { esma: 0, ayet: 0, hadis: 0, siir: 0 };
+                // Burada "favorites" dağılımını gösterelim, çünkü "read" history detaylı tutulmuyor.
+                // Veya statik bir veri gösterelim demo için.
+                // Demo için: Total verilerin kategorik dağılımı
+                sourceData.forEach(i => counts[i.cat]++);
+
+                this.chart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Esma', 'Ayet', 'Hadis', 'Şiir'],
+                        datasets: [{
+                            data: [counts.esma, counts.ayet, counts.hadis, counts.siir],
+                            backgroundColor: ['#10b981', '#0ea5e9', '#f43f5e', '#f59e0b'],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } }
+                        }
+                    }
+                });
+            },
+
+            updateStats() {
+                document.getElementById('stat-total-view').innerText = this.state.historyCount;
+                document.getElementById('stat-favorites').innerText = this.state.favorites.length;
+                
+                // Grafiği güncelle (Favorilere göre)
+                if(this.chart) {
+                    const favCounts = { esma: 0, ayet: 0, hadis: 0, siir: 0 };
+                    if(this.state.favorites.length > 0) {
+                        this.state.favorites.forEach(fid => {
+                            const item = sourceData.find(i => i.id === fid);
+                            if(item) favCounts[item.cat]++;
+                        });
+                        this.chart.data.datasets[0].data = [favCounts.esma, favCounts.ayet, favCounts.hadis, favCounts.siir];
+                        this.chart.update();
+                    }
+                }
+            },
+
+            // Global
+            updateUI() {
+                // Arama dinleyicisi
+                document.getElementById('search-input').addEventListener('input', () => this.renderList());
+                this.updateStats();
+            },
+
+            setupSwipe() {
+                const el = document.getElementById('flashcard');
+                let startX = 0;
+                
+                el.addEventListener('touchstart', e => { startX = e.changedTouches[0].screenX; }, {passive: true});
+                el.addEventListener('touchend', e => {
+                    const endX = e.changedTouches[0].screenX;
+                    if (endX < startX - 50) this.nextCard();
+                    if (endX > startX + 50) this.prevCard();
+                }, {passive: true});
+            }
+        };
+
+        // Kategori Filtreleme (Explore Sayfası için)
+        function filterContent(cat) {
+            app.state.filter = cat;
+            app.state.currentIndex = 0;
+            app.state.isFlipped = false;
+            document.getElementById('flashcard').classList.remove('flipped');
+            
+            // Tab stillerini güncelle
+            document.querySelectorAll('.explore-tab').forEach(btn => {
+                if(btn.innerText.toLowerCase() === (cat === 'all' ? 'hepsi' : cat)) {
+                    btn.classList.remove('bg-white', 'text-slate-500');
+                    btn.classList.add('bg-slate-800', 'text-white');
+                } else {
+                    btn.classList.add('bg-white', 'text-slate-500');
+                    btn.classList.remove('bg-slate-800', 'text-white');
+                }
+            });
+            
+            app.renderCard();
+        }
+
+        // Global Scope'a açma (HTML eventleri için)
+        window.app = app;
+        window.navTo = app.navTo.bind(app);
+        window.filterContent = filterContent;
+
+        // Başlat
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+            
+            // #flashcard elementine gerekli class'ı ekle (JS init sonrası)
+            document.getElementById('flashcard').classList.add('card-flip-inner');
+        });
+
+    </script>
+
+    <!-- Chosen Palette: Emerald & Amber (Sufi/Nature/Warmth) -->
+    <!-- Application Structure Plan: 
+         1. Dashboard: Provides a spiritual overview/stats (Chart.js usage).
+         2. Explore (Tefekkür): The core interaction loop using swipeable cards.
+         3. List (Fihrist): Quick access database.
+         4. Favorites (Heybe): Personal collection using LocalStorage.
+         Design rationale: Mobile-first bottom navigation is standard for apps. 
+         SPA architecture ensures instant transitions without reload. 
+         Tailwind handles responsive layout seamlessly. -->
+    <!-- Visualization & Content Choices: 
+         - Data: Hardcoded 'sourceData' array representing the Source Report.
+         - Chart: Doughnut chart visualizing the distribution of content types/favorites (Goal: Inform/Compare).
+         - Card Flip: CSS 3D transform for interactive learning (Goal: Engage).
+         - Icons: Unicode/CSS only (No SVG images used in body, only meta tags). -->
+    <!-- CONFIRMATION: NO SVG graphics used in body. NO Mermaid JS used. -->
+</body>
+</html>
